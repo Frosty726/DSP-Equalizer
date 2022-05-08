@@ -15,7 +15,7 @@ public class AudioPlayer implements LineListener {
     private AudioFormat format;
 
     /** Size of circular buffer **/
-    private static final int BUFF_SIZE = 1;
+    private static final int BUFF_SIZE = 16;
     private CircularBuffer buffer;
 
     private boolean paused = true;
@@ -48,6 +48,8 @@ public class AudioPlayer implements LineListener {
 
             boolean tmp = false;
 
+            Filter filter = new Filter(Coefs.filt1.length - 1, Coefs.filt1);
+
             while (readStatus != -1) {
                 if (paused) pause();
 
@@ -56,10 +58,10 @@ public class AudioPlayer implements LineListener {
 
                 putSuccess = buffer.put(makeSamplesFromBytes(readBytes));
 
-                // TO DO: filtering
-
-                if (tmp = buffer.pull(readSample))
+                if (buffer.pull(readSample)) {
+                    readSample = filter.evaluate(readSample);
                     sdl.write(makeBytesFromSamples(readSample), 0, 4);
+                }
             }
 
             sdl.drain();

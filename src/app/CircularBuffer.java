@@ -39,4 +39,15 @@ public class CircularBuffer {
     public short[] getBuffer() {
         return buffer;
     }
+
+    /** Methods for filtering **/
+    public void putQueue(short[] src) {
+        buffer[head % BUFF_SIZE    ] = src[0];
+        buffer[head % BUFF_SIZE + 1] = src[1];
+        head += 2;
+    }
+
+    public short get(int index) {
+        return buffer[(index + head + 1) % BUFF_SIZE];
+    }
 }

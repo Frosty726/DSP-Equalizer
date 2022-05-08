@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.AnchorPane?>
+
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="600.0" prefWidth="900.0" xmlns="http://javafx.com/javafx/18" xmlns:fx="http://javafx.com/fxml/1" fx:controller="app.Controller">
+   <children>
+      <Button fx:id="playStopButton" layoutX="70.0" layoutY="100.0" mnemonicParsing="false" onAction="#playStop" prefHeight="30.0" prefWidth="100.0" text="Play" />
+      <Button fx:id="openButton" layoutX="70.0" layoutY="50.0" mnemonicParsing="false" onAction="#open" prefHeight="30.0" prefWidth="100.0" text="Open" />
+      <Label fx:id="musicTitle" alignment="CENTER" contentDisplay="CENTER" layoutX="200.0" layoutY="50.0" prefHeight="30.0" prefWidth="230.0" text="No music" textAlignment="CENTER" />
+   </children>
+</AnchorPane>

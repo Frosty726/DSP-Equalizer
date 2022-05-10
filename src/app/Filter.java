@@ -1,6 +1,6 @@
 package app;
 
-public class Filter {
+public class Filter implements Evaluatable {
 
     private int      order;
     private double[] coefs;
@@ -14,6 +14,7 @@ public class Filter {
         System.arraycopy(coefs, 0, this.coefs, 0, coefs.length);
     }
 
+    @Override
     public short[] evaluate(short[] sample) {
         buffer.putQueue(sample);
         return process();

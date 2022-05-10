@@ -1,5 +1,8 @@
 package app;
 
+import javafx.scene.chart.LineChart;
+import javafx.scene.chart.XYChart;
+
 import javax.sound.sampled.*;
 import java.io.File;
 import java.io.IOException;
@@ -15,10 +18,17 @@ public class AudioPlayer implements LineListener {
     private AudioFormat format;
 
     /** Size of circular buffer **/
-    private static final int BUFF_SIZE = 16;
+    private static final int BUFF_SIZE = 256;
     private CircularBuffer buffer;
 
+    /** FFT **/
+    private FFT  inputSignal;
+    private FFT outputSignal;
+
+    private Evaluatable equalizer;
+
     private boolean paused = true;
+    private boolean ended  = false;
 
     public AudioPlayer(File musicFile) {
         try {
@@ -27,13 +37,18 @@ public class AudioPlayer implements LineListener {
             ais = iMusic.getAudioInputStream();
             format = ais.getFormat();
 
+            inputSignal  = new FFT();
+            outputSignal = new FFT();
+
+            equalizer = new Equalizer();
+
             buffer = new CircularBuffer(BUFF_SIZE);
         } catch (IOException | UnsupportedAudioFileException | LineUnavailableException e) {
             System.out.println(e.getMessage());
         }
     }
 
-    public void init() {
+    public void work() {
         try {
 
             sdl.open(format);
@@ -42,30 +57,42 @@ public class AudioPlayer implements LineListener {
 
             int    samplesOnce = 1; // Number of samples for each of 2 channels
             byte[]   readBytes = new  byte[samplesOnce * 4];
-            short[] readSample = new short[samplesOnce * 2];
+            short[]     sample = new short[samplesOnce * 2];
             boolean putSuccess = true;
             int     readStatus = 0;
 
-            boolean tmp = false;
-
-            Filter filter = new Filter(Coefs.filt1.length - 1, Coefs.filt1);
-
             while (readStatus != -1) {
                 if (paused) pause();
+                if (ended) {
+                    close();
+                    ((Equalizer)equalizer).close();
+                    return;
+                }
 
                 if (putSuccess)
                     readStatus = ais.read(readBytes, 0, 4);
 
-                putSuccess = buffer.put(makeSamplesFromBytes(readBytes));
+                sample = makeSamplesFromBytes(readBytes);
+                inputSignal.put(sample);
 
-                if (buffer.pull(readSample)) {
-                    readSample = filter.evaluate(readSample);
-                    sdl.write(makeBytesFromSamples(readSample), 0, 4);
+                if (inputSignal.isEvaluated())
+                    inputSignal.setEvaluated(false);
+
+                putSuccess = buffer.put(sample);
+
+                if (buffer.pull(sample)) {
+
+                    sample = equalizer.evaluate(sample);
+
+                    outputSignal.put(sample);
+                    if (outputSignal.isEvaluated())
+                        outputSignal.setEvaluated(false);
+
+                    sdl.write(makeBytesFromSamples(sample), 0, 4);
                 }
             }
 
-            sdl.drain();
-            sdl.close();
+            close();
 
         } catch (LineUnavailableException | IOException e) {
             e.printStackTrace();
@@ -86,6 +113,7 @@ public class AudioPlayer implements LineListener {
                 try {
                     if (!paused) break;
                     Thread.sleep(50);
+                    if (ended) return;
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -94,15 +122,59 @@ public class AudioPlayer implements LineListener {
     }
 
     public void close() {
-        if(this.ais != null)
+        if (this.ais != null) {
             try {
                 this.ais.close();
-            }
-            catch (IOException e) {
+            } catch (IOException e) {
                 e.printStackTrace();
             }
-        if(this.sdl != null)
+        }
+
+        if (this.sdl != null) {
+            this.sdl.drain();
             this.sdl.close();
+        }
+    }
+
+
+    public void chartWork(XYChart.Data<Number, Number>[] iData1,
+                          XYChart.Data<Number, Number>[] iData2,
+                          XYChart.Data<Number, Number>[] oData1,
+                          XYChart.Data<Number, Number>[] oData2) {
+        try {
+            while (true) {
+
+                if (!inputSignal.isEvaluated()) {
+                    inputSignal.evaluate();
+                    chart(iData1, iData2, inputSignal);
+                    inputSignal.setEvaluated(true);
+                }
+
+                if (!outputSignal.isEvaluated()) {
+                    outputSignal.evaluate();
+                    chart(oData1, oData2, outputSignal);
+                    outputSignal.setEvaluated(true);
+                }
+
+                Thread.sleep(50);
+                if (ended) return;
+            }
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    private void chart(XYChart.Data<Number, Number>[] data1,
+                       XYChart.Data<Number, Number>[] data2, FFT fft) {
+
+        double[] result = fft.getResult();
+        int size = result.length / 4;
+
+        for (int i = 0; i < size; i++) {
+            data1[i].setYValue((Math.log10(result[i * 2 + size    ]) - 1) / 2);
+            data2[i].setYValue((Math.log10(result[i * 2 + size + 1]) - 1) / 2);
+        }
     }
 
 
@@ -126,6 +198,9 @@ public class AudioPlayer implements LineListener {
 
     @Override
     public void update(LineEvent event) {
+    }
 
+    public void endWork() {
+        ended = true;
     }
 }

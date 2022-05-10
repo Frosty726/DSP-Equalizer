@@ -37,11 +37,15 @@ public class CircularBuffer {
     }
 
     public short[] getBuffer() {
-        return buffer;
+        short[] buff = new short[buffer.length];
+        System.arraycopy(buffer, 0, buff, 0, head % BUFF_SIZE);
+        System.arraycopy(buffer, head % BUFF_SIZE, buff, 0, BUFF_SIZE - (head % BUFF_SIZE));
+
+        return buff;
     }
 
     /** Methods for filtering **/
-    public void putQueue(short[] src) {
+    public void putQueue(final short[] src) {
         buffer[head % BUFF_SIZE    ] = src[0];
         buffer[head % BUFF_SIZE + 1] = src[1];
         head += 2;

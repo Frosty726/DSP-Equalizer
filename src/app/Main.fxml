@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.scene.chart.CategoryAxis?>
+<?import javafx.scene.chart.LineChart?>
+<?import javafx.scene.chart.NumberAxis?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
 <?import javafx.scene.layout.AnchorPane?>
@@ -8,6 +11,23 @@
    <children>
       <Button fx:id="playStopButton" layoutX="70.0" layoutY="100.0" mnemonicParsing="false" onAction="#playStop" prefHeight="30.0" prefWidth="100.0" text="Play" />
       <Button fx:id="openButton" layoutX="70.0" layoutY="50.0" mnemonicParsing="false" onAction="#open" prefHeight="30.0" prefWidth="100.0" text="Open" />
-      <Label fx:id="musicTitle" alignment="CENTER" contentDisplay="CENTER" layoutX="200.0" layoutY="50.0" prefHeight="30.0" prefWidth="230.0" text="No music" textAlignment="CENTER" />
+      <Label fx:id="musicTitle" alignment="CENTER" contentDisplay="CENTER" layoutX="200.0" layoutY="50.0" prefHeight="30.0" prefWidth="629.0" text="No music" textAlignment="CENTER" />
+      <Button fx:id="closeButton" layoutX="860.0" layoutY="15.0" mnemonicParsing="false" onAction="#closeClick" prefHeight="25.0" prefWidth="25.0" text="X" />
+      <LineChart fx:id="inputChart" layoutX="30.0" layoutY="330.0" prefHeight="250.0" prefWidth="400.0">
+        <xAxis>
+          <NumberAxis fx:id="iXAxis" side="BOTTOM" />
+        </xAxis>
+        <yAxis>
+          <NumberAxis fx:id="iYAxis" side="LEFT" />
+        </yAxis>
+      </LineChart>
+      <LineChart fx:id="outputChart" layoutX="450.0" layoutY="330.0" prefHeight="250.0" prefWidth="400.0">
+         <xAxis>
+            <NumberAxis fx:id="oXAxis" side="BOTTOM" />
+         </xAxis>
+         <yAxis>
+            <NumberAxis fx:id="oYAxis" side="LEFT" />
+         </yAxis>
+      </LineChart>
    </children>
 </AnchorPane>

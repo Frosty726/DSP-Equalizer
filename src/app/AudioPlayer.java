@@ -12,7 +12,7 @@ import java.nio.ByteBuffer;
 /**
  * Handles all audio performance
  * **/
-public class AudioPlayer implements LineListener {
+public class AudioPlayer {
 
     private SourceDataLine sdl;
     private AudioInputStream ais;
@@ -27,7 +27,7 @@ public class AudioPlayer implements LineListener {
     private FFT  inputSignal;
     private FFT outputSignal;
 
-    private Evaluatable equalizer;
+    private Equalizer equalizer;
 
     private boolean paused = true;
     private boolean ended  = false;
@@ -207,12 +207,16 @@ public class AudioPlayer implements LineListener {
         return buff;
     }
 
-    @Override
-    public void update(LineEvent event) {
-    }
-
     public void endWork() {
         ended = true;
+    }
+
+    public void setGain(int index, double value) {
+        equalizer.setGain(index, value);
+    }
+
+    public int getNumOfBands() {
+        return Equalizer.getNumOfFilters();
     }
 
     public static int getSamplesOnce() {

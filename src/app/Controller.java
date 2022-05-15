@@ -1,8 +1,10 @@
 package app;
 
+import javafx.beans.InvalidationListener;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.scene.chart.Axis;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
@@ -24,14 +26,15 @@ public class Controller {
     private Thread audioThread;
     private Thread chartThread;
 
-    @FXML Slider slider1;
-    @FXML Slider slider2;
-    @FXML Slider slider3;
-    @FXML Slider slider4;
-    @FXML Slider slider5;
-    @FXML Slider slider6;
-    @FXML Slider slider7;
-    @FXML Slider slider8;
+    @FXML private Slider slider1;
+    @FXML private Slider slider2;
+    @FXML private Slider slider3;
+    @FXML private Slider slider4;
+    @FXML private Slider slider5;
+    @FXML private Slider slider6;
+    @FXML private Slider slider7;
+    @FXML private Slider slider8;
+    private     Slider[] sliders;
 
     @FXML private Button playStopButton;
     @FXML private Button closeButton;
@@ -42,10 +45,10 @@ public class Controller {
     @FXML private LineChart<Number, Number>  inputChart, outputChart;
     private XYChart.Data<Number, Number>[] iData1, iData2, oData1, oData2;
 
-
     @FXML
     public void initialize() {
         initCharts();
+        initSliders();
     }
 
     @FXML
@@ -148,9 +151,44 @@ public class Controller {
         oYAxis.setAutoRanging(false);
         oYAxis.setAnimated(false);
 
-        iXAxis.setLowerBound(-22050);
-        iXAxis.setUpperBound(22050);
-        oXAxis.setLowerBound(-22050);
-        oXAxis.setUpperBound(22050);
+        iXAxis.setAutoRanging(false);
+        iXAxis.setTickUnit(5000);
+        iXAxis.setLowerBound(-25000);
+        iXAxis.setUpperBound(25000);
+        oXAxis.setAutoRanging(false);
+        oXAxis.setTickUnit(5000);
+        oXAxis.setLowerBound(-25000);
+        oXAxis.setUpperBound(25000);
+    }
+
+    private void initSliders() {
+        slider1.setValue(slider1.getMax());
+        slider2.setValue(slider2.getMax());
+        slider3.setValue(slider3.getMax());
+        slider4.setValue(slider4.getMax());
+        slider5.setValue(slider5.getMax());
+        slider6.setValue(slider6.getMax());
+        slider7.setValue(slider7.getMax());
+        slider8.setValue(slider8.getMax());
+
+        sliders = new Slider[]{
+                slider1, slider2, slider3, slider4,
+                slider5, slider6, slider7, slider8
+        };
+
+        for (int i = 0; i < Equalizer.getNumOfFilters(); i++) {
+            int finalI = i;
+            sliders[i].valueProperty().addListener(new ChangeListener<Number>() {
+                private final int index = finalI;
+
+                @Override
+                public void changed(ObservableValue<? extends Number> observableValue,
+                                    Number olaValue, Number newValue) {
+                    double value = Math.pow(10, (-70 + newValue.doubleValue() / sliders[index].getMax() * 70) / 20);
+                    if (aPlayer != null)
+                        aPlayer.setGain(index, value);
+                }
+            });
+        }
     }
 }

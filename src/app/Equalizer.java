@@ -18,6 +18,10 @@ public class Equalizer implements Evaluatable {
     private short[]       sample;
     private short[]   samplesRes;
 
+    private double[]        gain;
+
+    private static final double minGain = Math.pow(10, -70.0 / 20);
+
     private int    numCalculated; // Number of filters completed calculations
     private boolean      endWork; // Flag: 1 - complete work, 0 - continue work
 
@@ -25,7 +29,7 @@ public class Equalizer implements Evaluatable {
 
         this.smplOnce = smplOnce;
 
-        filters = new Filter[NUM_OF_FILTERS];
+        filters    = new Filter[NUM_OF_FILTERS];
         filters[0] = new Filter(Coefs.filt1.length - 1, Coefs.filt1, smplOnce);
         filters[1] = new Filter(Coefs.filt2.length - 1, Coefs.filt2, smplOnce);
         filters[2] = new Filter(Coefs.filt3.length - 1, Coefs.filt3, smplOnce);
@@ -37,6 +41,10 @@ public class Equalizer implements Evaluatable {
 
         sample     = new short[2 * smplOnce];
         samplesRes = new short[NUM_OF_FILTERS * 2 * smplOnce];
+
+        gain       = new double[NUM_OF_FILTERS];
+        for (int i = 0; i < NUM_OF_FILTERS; i++)
+            gain[i] = 1;
 
         endWork       = false;
         numCalculated = 0;
@@ -77,7 +85,7 @@ public class Equalizer implements Evaluatable {
         for (int i = 0; i < NUM_OF_FILTERS; i++) {
             memIndex = i * smplOnce * 2;
             for (int j = 0; j < smpl.length; j++)
-                smpl[j] += samplesRes[memIndex + j];
+                smpl[j] += samplesRes[memIndex + j] * gain[i];
         }
 
         return smpl;
@@ -116,6 +124,32 @@ public class Equalizer implements Evaluatable {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+    }
+
+    public void setGain(int index, double value) {
+        if (value > 1) {
+            gain[index] = 1;
+            System.out.println(
+                    "Error: get wrong slider value.\n" +
+                    "Gained: " + value + '\n' +
+                    "Replaced with: " + 1);
+            return;
+        }
+
+        if (value < minGain) {
+            gain[index] = minGain;
+            System.out.println(
+                    "Error: get wrong slider value.\n" +
+                    "Gained: " + value + '\n' +
+                    "Replaced with: " + minGain);
+            return;
+        }
+
+        gain[index] = value;
+    }
+
+    public static int getNumOfFilters() {
+        return NUM_OF_FILTERS;
     }
 
     /** Functions for handling work time of threads of equalizer and its filters **/

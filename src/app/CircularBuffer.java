@@ -2,53 +2,62 @@ package app;
 
 public class CircularBuffer {
 
+    private int samplesOnce; // Number of samples in one channel
     private int BUFF_SIZE;
     private short[] buffer;
     private int head;
     private int tail;
 
-    public CircularBuffer(int size) {
-        BUFF_SIZE = size * 2;
+    public CircularBuffer(int size, int smplOnce, int numChannels) {
+        samplesOnce = smplOnce * numChannels;
+        BUFF_SIZE = size * numChannels;
         buffer = new short[BUFF_SIZE];
         head = 0;
         tail = 0;
     }
 
     public boolean put(short[] source) {
-        if (head - tail > BUFF_SIZE - 2)
+        if (source.length != samplesOnce) {
+            System.out.println("Wrong num of samples");
+            return false;
+        }
+        if (head - tail > BUFF_SIZE - 2 * samplesOnce)
             return false;
 
-        buffer[head % BUFF_SIZE    ] = source[0];
-        buffer[head % BUFF_SIZE + 1] = source[1];
-        head += 2;
+        System.arraycopy(source, 0, buffer, head, samplesOnce);
+        head = (head + samplesOnce) % BUFF_SIZE;
 
         return true;
     }
 
     public boolean pull(short[] target) {
-        if (head - tail == 0)
+        if (target.length != samplesOnce) {
+            System.out.println("Wrong num of samples");
             return false;
+        }
 
-        target[0] = buffer[tail % BUFF_SIZE    ];
-        target[1] = buffer[tail % BUFF_SIZE + 1];
-        tail += 2;
+        if (head - tail == 0) {
+            return false;
+        }
+
+        System.arraycopy(buffer, tail, target, 0, samplesOnce);
+        tail = (tail + samplesOnce) % BUFF_SIZE;
 
         return true;
     }
 
     public short[] getBuffer() {
         short[] buff = new short[buffer.length];
-        System.arraycopy(buffer, 0, buff, 0, head % BUFF_SIZE);
-        System.arraycopy(buffer, head % BUFF_SIZE, buff, 0, BUFF_SIZE - (head % BUFF_SIZE));
+        System.arraycopy(buffer, 0, buff, 0, head);
+        System.arraycopy(buffer, head, buff, 0, BUFF_SIZE - head);
 
         return buff;
     }
 
     /** Methods for filtering **/
     public void putQueue(final short[] src) {
-        buffer[head % BUFF_SIZE    ] = src[0];
-        buffer[head % BUFF_SIZE + 1] = src[1];
-        head += 2;
+        System.arraycopy(src, 0, buffer, head, samplesOnce);
+        head = (head + samplesOnce) % BUFF_SIZE;
     }
 
     public short get(int index) {

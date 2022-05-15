@@ -8,6 +8,7 @@ import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.Slider;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 
@@ -22,6 +23,15 @@ public class Controller {
     // Threads
     private Thread audioThread;
     private Thread chartThread;
+
+    @FXML Slider slider1;
+    @FXML Slider slider2;
+    @FXML Slider slider3;
+    @FXML Slider slider4;
+    @FXML Slider slider5;
+    @FXML Slider slider6;
+    @FXML Slider slider7;
+    @FXML Slider slider8;
 
     @FXML private Button playStopButton;
     @FXML private Button closeButton;
@@ -93,7 +103,7 @@ public class Controller {
 
     private void initCharts() {
 
-        int size = FFT.getBuffSize() / 4;
+        int size = 2048;
 
         /** 2 channels for input and 2 channels for output **/
         XYChart.Series<Number, Number> inputData1  = new XYChart.Series<>();

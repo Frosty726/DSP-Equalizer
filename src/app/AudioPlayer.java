@@ -1,5 +1,6 @@
 package app;
 
+import app.coefs.Coefs;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.XYChart;
 
@@ -18,7 +19,8 @@ public class AudioPlayer implements LineListener {
     private AudioFormat format;
 
     /** Size of circular buffer **/
-    private static final int BUFF_SIZE = 256;
+    private static final int SAMPLES_ONCE = 16384;
+    private static final int    BUFF_SIZE = SAMPLES_ONCE * 16;
     private CircularBuffer buffer;
 
     /** FFT **/
@@ -32,17 +34,19 @@ public class AudioPlayer implements LineListener {
 
     public AudioPlayer(File musicFile) {
         try {
-            InputMusic iMusic = new InputMusic(musicFile);
-            sdl = iMusic.getSourceDataLine();
-            ais = iMusic.getAudioInputStream();
-            format = ais.getFormat();
+            if (musicFile != null) {
+                ais = AudioSystem.getAudioInputStream(musicFile);
+                sdl = AudioSystem.getSourceDataLine(format);
+                sdl.flush();
+                format = ais.getFormat();
+            }
 
-            inputSignal  = new FFT();
-            outputSignal = new FFT();
+            inputSignal  = new FFT(SAMPLES_ONCE);
+            outputSignal = new FFT(SAMPLES_ONCE);
 
-            equalizer = new Equalizer();
+            equalizer = new Equalizer(SAMPLES_ONCE);
 
-            buffer = new CircularBuffer(BUFF_SIZE);
+            buffer = new CircularBuffer(BUFF_SIZE, SAMPLES_ONCE, 2);
         } catch (IOException | UnsupportedAudioFileException | LineUnavailableException e) {
             System.out.println(e.getMessage());
         }
@@ -55,26 +59,31 @@ public class AudioPlayer implements LineListener {
             sdl.start();
             paused = true;
 
-            int    samplesOnce = 1; // Number of samples for each of 2 channels
-            byte[]   readBytes = new  byte[samplesOnce * 4];
-            short[]     sample = new short[samplesOnce * 2];
+            Evaluatable filter = new Filter(Coefs.filt3.length - 1, Coefs.filt3, SAMPLES_ONCE);
+
+            byte[]   readBytes = new  byte[SAMPLES_ONCE * 4];
+            short[]     sample = new short[SAMPLES_ONCE * 2];
             boolean putSuccess = true;
             int     readStatus = 0;
+
+            short[] readSamples;
 
             while (readStatus != -1) {
                 if (paused) pause();
                 if (ended) {
                     close();
-                    ((Equalizer)equalizer).close();
+                    if (equalizer != null)
+                        ((Equalizer)equalizer).close();
+
                     return;
                 }
 
                 if (putSuccess)
-                    readStatus = ais.read(readBytes, 0, 4);
+                    readStatus = ais.read(readBytes, 0, SAMPLES_ONCE * 4);
 
                 sample = makeSamplesFromBytes(readBytes);
-                inputSignal.put(sample);
 
+                inputSignal.put(sample);
                 if (inputSignal.isEvaluated())
                     inputSignal.setEvaluated(false);
 
@@ -83,16 +92,19 @@ public class AudioPlayer implements LineListener {
                 if (buffer.pull(sample)) {
 
                     sample = equalizer.evaluate(sample);
+                    //sample = filter.evaluate(sample);
+
 
                     outputSignal.put(sample);
                     if (outputSignal.isEvaluated())
                         outputSignal.setEvaluated(false);
 
-                    sdl.write(makeBytesFromSamples(sample), 0, 4);
+                    sdl.write(makeBytesFromSamples(sample), 0, SAMPLES_ONCE * 4);
                 }
             }
 
-            close();
+            sdl.drain();
+            sdl.close();
 
         } catch (LineUnavailableException | IOException e) {
             e.printStackTrace();
@@ -131,7 +143,6 @@ public class AudioPlayer implements LineListener {
         }
 
         if (this.sdl != null) {
-            this.sdl.drain();
             this.sdl.close();
         }
     }
@@ -202,5 +213,9 @@ public class AudioPlayer implements LineListener {
 
     public void endWork() {
         ended = true;
+    }
+
+    public static int getSamplesOnce() {
+        return SAMPLES_ONCE;
     }
 }

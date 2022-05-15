@@ -1,11 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<?import javafx.scene.chart.CategoryAxis?>
 <?import javafx.scene.chart.LineChart?>
 <?import javafx.scene.chart.NumberAxis?>
 <?import javafx.scene.control.Button?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.Slider?>
 <?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.Pane?>
 
 <AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="600.0" prefWidth="900.0" xmlns="http://javafx.com/javafx/18" xmlns:fx="http://javafx.com/fxml/1" fx:controller="app.Controller">
    <children>
@@ -29,5 +30,17 @@
             <NumberAxis fx:id="oYAxis" side="LEFT" />
          </yAxis>
       </LineChart>
+      <Pane fx:id="equalizerPane" layoutX="235.0" layoutY="115.0" prefHeight="200.0" prefWidth="452.0" stylesheets="@style.css">
+         <children>
+            <Slider fx:id="slider1" layoutX="35.0" layoutY="30.0" orientation="VERTICAL" />
+            <Slider fx:id="slider2" layoutX="70.0" layoutY="30.0" orientation="VERTICAL" />
+            <Slider fx:id="slider3" layoutX="105.0" layoutY="30.0" orientation="VERTICAL" />
+            <Slider fx:id="slider4" layoutX="140.0" layoutY="30.0" orientation="VERTICAL" />
+            <Slider fx:id="slider5" layoutX="175.0" layoutY="30.0" orientation="VERTICAL" />
+            <Slider fx:id="slider6" layoutX="210.0" layoutY="30.0" orientation="VERTICAL" />
+            <Slider fx:id="slider7" layoutX="245.0" layoutY="30.0" orientation="VERTICAL" />
+            <Slider fx:id="slider8" layoutX="280.0" layoutY="30.0" orientation="VERTICAL" />
+         </children>
+      </Pane>
    </children>
 </AnchorPane>

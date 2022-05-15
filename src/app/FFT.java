@@ -4,9 +4,7 @@ import java.lang.Math;
 
 public class FFT {
 
-    /** Buffer size = 2^power, power = POW **/
-    private static final int POW = 12;
-    private static final int BUFF_SIZE = 1 << POW;
+    private static int BUFF_SIZE;
     private static final double twoPi = Math.PI * 2;
 
     private CircularBuffer buffer;
@@ -14,8 +12,9 @@ public class FFT {
 
     private boolean   isEvaluated;
 
-    public FFT() {
-        buffer = new CircularBuffer(BUFF_SIZE);
+    public FFT(int sampleOnce) {
+        BUFF_SIZE = sampleOnce * 2;
+        buffer = new CircularBuffer(BUFF_SIZE, sampleOnce, 2);
         result = new double[BUFF_SIZE * 2];
         isEvaluated = true;
     }
@@ -27,13 +26,14 @@ public class FFT {
     public void evaluate() {
 
         short[] input = buffer.getBuffer();
-        this.result = new double[BUFF_SIZE];
+        int size = 8192;
+        this.result = new double[size];
         int i, j, n, m, Mmax, Istp;
         double Tmpr, Tmpi, Wtmp, Theta;
         double Wpr, Wpi, Wr, Wi;
         double[] Tmvl;
 
-        n = BUFF_SIZE * 2;
+        n = size * 2;
         Tmvl = new double[n];
         for (i = 0; i < n; i+=2) {
             Tmvl[i] = 0;
@@ -47,7 +47,7 @@ public class FFT {
                 Tmvl[j] = Tmpr; Tmpr = Tmvl[i+1];
                 Tmvl[i+1] = Tmvl[j+1]; Tmvl[j+1] = Tmpr;
             }
-            i = i + 2; m = BUFF_SIZE;
+            i = i + 2; m = size;
             while ((m >= 2) && (j > m)) {
                 j = j - m; m = m >> 1;
             }
@@ -82,9 +82,9 @@ public class FFT {
             Mmax = Istp;
         }
 
-        for (i = 0; i < BUFF_SIZE; i++) {
+        for (i = 0; i < size; i++) {
             j = i * 2;
-            result[i] = 2 * Math.sqrt(Math.pow(Tmvl[j],2) + Math.pow(Tmvl[j+1],2)) / BUFF_SIZE;
+            result[i] = 2 * Math.sqrt(Math.pow(Tmvl[j],2) + Math.pow(Tmvl[j+1],2)) / size;
         }
     }
 

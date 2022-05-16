@@ -1,7 +1,5 @@
 package app;
 
-import app.coefs.Coefs;
-import javafx.scene.chart.LineChart;
 import javafx.scene.chart.XYChart;
 
 import javax.sound.sampled.*;
@@ -14,23 +12,37 @@ import java.nio.ByteBuffer;
  * **/
 public class AudioPlayer {
 
-    private SourceDataLine sdl;
+    private SourceDataLine   sdl;
     private AudioInputStream ais;
-    private AudioFormat format;
+    private AudioFormat   format;
+
+    /**
+     * Possible SAMPLE_ONCE values:
+     * 4096
+     * 8192
+     * 16384
+     * 32768
+     * **/
 
     /** Size of circular buffer **/
     private static final int SAMPLES_ONCE = 16384;
-    private static final int    BUFF_SIZE = SAMPLES_ONCE * 16;
+    private static final int    BUFF_SIZE = SAMPLES_ONCE * 8;
     private CircularBuffer buffer;
 
     /** FFT **/
     private FFT  inputSignal;
     private FFT outputSignal;
 
-    private Equalizer equalizer;
+    private Evaluatable equalizer;
+    private Evaluatable    chorus;
+    private Evaluatable  clipping;
 
-    private boolean paused = true;
-    private boolean ended  = false;
+    private boolean enableEqualizer = true;
+    private boolean enableChorus    = false;
+    private boolean enableClipping  = false;
+
+    private boolean     paused = true;
+    private boolean     ended  = false;
 
     public AudioPlayer(File musicFile) {
         try {
@@ -45,8 +57,11 @@ public class AudioPlayer {
             outputSignal = new FFT(SAMPLES_ONCE);
 
             equalizer = new Equalizer(SAMPLES_ONCE);
+            chorus    = new ChorusEffect(SAMPLES_ONCE);
+            clipping  = new ClippingEffect();
 
             buffer = new CircularBuffer(BUFF_SIZE, SAMPLES_ONCE, 2);
+
         } catch (IOException | UnsupportedAudioFileException | LineUnavailableException e) {
             System.out.println(e.getMessage());
         }
@@ -59,8 +74,6 @@ public class AudioPlayer {
             sdl.start();
             paused = true;
 
-            Evaluatable filter = new Filter(Coefs.filt3.length - 1, Coefs.filt3, SAMPLES_ONCE);
-
             byte[]   readBytes = new  byte[SAMPLES_ONCE * 4];
             short[]     sample = new short[SAMPLES_ONCE * 2];
             boolean putSuccess = true;
@@ -68,7 +81,7 @@ public class AudioPlayer {
 
             short[] readSamples;
 
-            while (readStatus != -1) {
+            while (true) {
                 if (paused) pause();
                 if (ended) {
                     close();
@@ -81,18 +94,34 @@ public class AudioPlayer {
                 if (putSuccess)
                     readStatus = ais.read(readBytes, 0, SAMPLES_ONCE * 4);
 
+                if (readStatus == -1) {
+                    endWork();
+                    pause();
+                    break;
+                }
+
                 sample = makeSamplesFromBytes(readBytes);
 
                 inputSignal.put(sample);
                 if (inputSignal.isEvaluated())
                     inputSignal.setEvaluated(false);
 
-                putSuccess = buffer.put(sample);
+                buffer.put(sample);
 
                 if (buffer.pull(sample)) {
 
-                    sample = equalizer.evaluate(sample);
-                    //sample = filter.evaluate(sample);
+                    if (enableEqualizer)
+                        sample = equalizer.evaluate(sample);
+                    else
+                        equalizer.evaluate(sample);
+
+                    if (enableChorus)
+                        sample = chorus.evaluate(sample);
+                    else
+                        chorus.evaluate(sample);
+
+                    if (enableClipping)
+                        sample = clipping.evaluate(sample);
 
 
                     outputSignal.put(sample);
@@ -121,6 +150,8 @@ public class AudioPlayer {
 
     private void pause() {
         if (paused) {
+            sdl.flush();
+
             while (true) {
                 try {
                     if (!paused) break;
@@ -146,7 +177,6 @@ public class AudioPlayer {
             this.sdl.close();
         }
     }
-
 
     public void chartWork(XYChart.Data<Number, Number>[] iData1,
                           XYChart.Data<Number, Number>[] iData2,
@@ -212,7 +242,11 @@ public class AudioPlayer {
     }
 
     public void setGain(int index, double value) {
-        equalizer.setGain(index, value);
+        ((Equalizer)equalizer).setGain(index, value);
+    }
+
+    public void setClippingBound(short bound) {
+        ((ClippingEffect)clipping).setBound(bound);
     }
 
     public int getNumOfBands() {
@@ -221,5 +255,17 @@ public class AudioPlayer {
 
     public static int getSamplesOnce() {
         return SAMPLES_ONCE;
+    }
+
+    public void setEnableEqualizer(boolean enableEqualizer) {
+        this.enableEqualizer = enableEqualizer;
+    }
+
+    public void setEnableChorus(boolean enableChorus) {
+        this.enableChorus = enableChorus;
+    }
+
+    public void setEnableClipping(boolean enableClipping) {
+        this.enableClipping = enableClipping;
     }
 }

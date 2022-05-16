@@ -1,6 +1,5 @@
 package app;
 
-import javafx.beans.InvalidationListener;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
@@ -9,6 +8,7 @@ import javafx.scene.chart.LineChart;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.Button;
+import javafx.scene.control.CheckBox;
 import javafx.scene.control.Label;
 import javafx.scene.control.Slider;
 import javafx.stage.FileChooser;
@@ -36,8 +36,15 @@ public class Controller {
     @FXML private Slider slider8;
     private     Slider[] sliders;
 
+    @FXML private Slider clippingSlider;
+
     @FXML private Button playStopButton;
     @FXML private Button closeButton;
+    @FXML private Button resetButton;
+
+    @FXML private CheckBox equalizerEnable;
+    @FXML private CheckBox chorusEnable;
+    @FXML private CheckBox clippingEnable;
 
     @FXML private Label musicTitle;
 
@@ -49,6 +56,7 @@ public class Controller {
     public void initialize() {
         initCharts();
         initSliders();
+        initCheckboxes();
     }
 
     @FXML
@@ -80,6 +88,7 @@ public class Controller {
             musicTitle.setText(selected.getName());
 
             aPlayer = new AudioPlayer(selected);
+
             audioThread = new Thread(()->{
                 aPlayer.work();
             });
@@ -93,6 +102,27 @@ public class Controller {
         } catch (Exception ex) {
             ex.printStackTrace();
         }
+    }
+
+    @FXML
+    public void resetEqualizer(ActionEvent e) {
+        for (int i = 0; i < aPlayer.getNumOfBands(); i++)
+            sliders[i].setValue(sliders[i].getMax());
+    }
+
+    @FXML
+    public void checkBoxEqualizer(ActionEvent e) {
+        aPlayer.setEnableEqualizer(equalizerEnable.isSelected());
+    }
+
+    @FXML
+    public void checkBoxChorus(ActionEvent e) {
+        aPlayer.setEnableChorus(chorusEnable.isSelected());
+    }
+
+    @FXML
+    public void checkBoxClipping(ActionEvent e) {
+        aPlayer.setEnableClipping(clippingEnable.isSelected());
     }
 
     @FXML
@@ -190,5 +220,22 @@ public class Controller {
                 }
             });
         }
+
+        clippingSlider.setValue(clippingSlider.getMax());
+
+        clippingSlider.valueProperty().addListener(new ChangeListener<Number>() {
+            @Override
+            public void changed(ObservableValue<? extends Number> observableValue,
+                                Number oldValue, Number newValue) {
+                if (aPlayer != null)
+                    aPlayer.setClippingBound((short)(Short.MAX_VALUE * newValue.shortValue() / 100));
+            }
+        });
+    }
+
+    private void initCheckboxes() {
+        equalizerEnable.setSelected(true);
+        chorusEnable.setSelected(false);
+        clippingEnable.setSelected(false);
     }
 }

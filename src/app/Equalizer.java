@@ -2,7 +2,7 @@ package app;
 
 import app.coefs.Coefs;
 
-public class Equalizer implements Evaluatable {
+public class Equalizer implements Evaluatable, SampleQueue {
 
     /** Enum for threads handling **/
     private enum THREAD {
@@ -11,14 +11,15 @@ public class Equalizer implements Evaluatable {
     }
 
     private static final int NUM_OF_FILTERS = 8;
-    private int         smplOnce;
+    private static final int THREAD_FILTERS = 1; // Number of filters in one thread
 
-    private Filter[]     filters;
+    private int          smplOnce;
+    private BandFilter[]  filters;
 
-    private short[]       sample;
-    private short[]   samplesRes;
+    private CircularBuffer buffer;
+    private short[]    samplesRes;
 
-    private double[]        gain;
+    private double[]         gain;
 
     private static final double minGain = Math.pow(10, -70.0 / 20);
 
@@ -29,27 +30,27 @@ public class Equalizer implements Evaluatable {
 
         this.smplOnce = smplOnce;
 
-        filters    = new Filter[NUM_OF_FILTERS];
-        filters[0] = new Filter(Coefs.filt1.length - 1, Coefs.filt1, smplOnce);
-        filters[1] = new Filter(Coefs.filt2.length - 1, Coefs.filt2, smplOnce);
-        filters[2] = new Filter(Coefs.filt3.length - 1, Coefs.filt3, smplOnce);
-        filters[3] = new Filter(Coefs.filt4.length - 1, Coefs.filt4, smplOnce);
-        filters[4] = new Filter(Coefs.filt5.length - 1, Coefs.filt5, smplOnce);
-        filters[5] = new Filter(Coefs.filt6.length - 1, Coefs.filt6, smplOnce);
-        filters[6] = new Filter(Coefs.filt7.length - 1, Coefs.filt7, smplOnce);
-        filters[7] = new Filter(Coefs.filt8.length - 1, Coefs.filt8, smplOnce);
+        filters    = new BandFilter[NUM_OF_FILTERS];
+        filters[0] = new BandFilter(this, Coefs.filt1.length - 1, Coefs.filt1, smplOnce);
+        filters[1] = new BandFilter(this, Coefs.filt2.length - 1, Coefs.filt2, smplOnce);
+        filters[2] = new BandFilter(this, Coefs.filt3.length - 1, Coefs.filt3, smplOnce);
+        filters[3] = new BandFilter(this, Coefs.filt4.length - 1, Coefs.filt4, smplOnce);
+        filters[4] = new BandFilter(this, Coefs.filt5.length - 1, Coefs.filt5, smplOnce);
+        filters[5] = new BandFilter(this, Coefs.filt6.length - 1, Coefs.filt6, smplOnce);
+        filters[6] = new BandFilter(this, Coefs.filt7.length - 1, Coefs.filt7, smplOnce);
+        filters[7] = new BandFilter(this, Coefs.filt8.length - 1, Coefs.filt8, smplOnce);
 
-        sample     = new short[2 * smplOnce];
+        buffer     = new CircularBuffer(smplOnce * 4, smplOnce, 2);
         samplesRes = new short[NUM_OF_FILTERS * 2 * smplOnce];
 
         gain       = new double[NUM_OF_FILTERS];
         for (int i = 0; i < NUM_OF_FILTERS; i++)
             gain[i] = 1;
 
-        endWork       = false;
-        numCalculated = 0;
+        endWork          = false;
+        numCalculated    = 0;
 
-        for (int i = 0; i < NUM_OF_FILTERS; i++) {
+        for (int i = 0; i < NUM_OF_FILTERS / THREAD_FILTERS; i++) {
             int index = i;
             new Thread(()->{
                 filterWork(index);
@@ -58,16 +59,23 @@ public class Equalizer implements Evaluatable {
     }
 
     private void filterWork(int index) {
-        Filter filter = filters[index];
-        short[]  smpl = new short[2 * smplOnce];
-        int  memIndex = index * smplOnce * 2;
-        report(THREAD.FILTER);
+        BandFilter[] filters = new BandFilter[THREAD_FILTERS];
+        for (int i = 0; i < THREAD_FILTERS; i++)
+            filters[i] = this.filters[index + i * NUM_OF_FILTERS / THREAD_FILTERS];
+
+        short[][]  smpl = new short[THREAD_FILTERS][2 * smplOnce];
+
+        int[]  memIndex = new int[THREAD_FILTERS];
+        for (int i = 0; i < THREAD_FILTERS; i++)
+            memIndex[i] = (index + i * NUM_OF_FILTERS / THREAD_FILTERS) * smplOnce * 2;
 
         while (true) {
             if (endWork) return;
 
-            smpl = filter.evaluate(this.sample);
-            System.arraycopy(smpl, 0, samplesRes, memIndex, smpl.length);
+            for (int i = 0; i < THREAD_FILTERS; i++) {
+                smpl[i] = filters[i].filtering();
+                System.arraycopy(smpl[i], 0, samplesRes, memIndex[i], smpl[i].length);
+            }
 
             report(THREAD.FILTER);
         }
@@ -76,11 +84,11 @@ public class Equalizer implements Evaluatable {
     @Override
     public short[] evaluate(short[] sample) {
 
-        this.sample = sample;
+        buffer.putQueue(sample);
         report(THREAD.EQUALIZER);
 
         short[] smpl = new short[2 * smplOnce];
-        int memIndex = 0;
+        int memIndex = 0; // Filters results addresses
 
         for (int i = 0; i < NUM_OF_FILTERS; i++) {
             memIndex = i * smplOnce * 2;
@@ -114,7 +122,7 @@ public class Equalizer implements Evaluatable {
                 case FILTER:
 
                     incNumCalc();
-                    if (numCalculated == NUM_OF_FILTERS)
+                    if (numCalculated == NUM_OF_FILTERS / THREAD_FILTERS)
                         equalizerRoom(THREAD.FILTER);
 
                     filtersRoom(THREAD.FILTER);
@@ -165,6 +173,11 @@ public class Equalizer implements Evaluatable {
             case EQUALIZER -> wait();
             case    FILTER -> notify();
         }
+    }
+
+    @Override
+    public short getSample(int index) {
+        return buffer.get(index);
     }
 
     private synchronized void incNumCalc() {

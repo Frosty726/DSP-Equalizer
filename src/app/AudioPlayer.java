@@ -22,12 +22,14 @@ public class AudioPlayer {
      * 8192
      * 16384
      * 32768
+     * 65536
      * **/
 
     /** Size of circular buffer **/
     private static final int SAMPLES_ONCE = 16384;
     private static final int    BUFF_SIZE = SAMPLES_ONCE * 8;
     private CircularBuffer buffer;
+    private CircularBuffer equalizerResult;
 
     /** FFT **/
     private FFT  inputSignal;
@@ -40,9 +42,12 @@ public class AudioPlayer {
     private boolean enableEqualizer = true;
     private boolean enableChorus    = false;
     private boolean enableClipping  = false;
+    private boolean enableGraphics  = false;
 
-    private boolean     paused = true;
-    private boolean     ended  = false;
+    private boolean paused = true;
+    private boolean ended  = false;
+
+    private Thread equalizerThread;
 
     public AudioPlayer(File musicFile) {
         try {
@@ -60,7 +65,11 @@ public class AudioPlayer {
             chorus    = new ChorusEffect(SAMPLES_ONCE);
             clipping  = new ClippingEffect();
 
-            buffer = new CircularBuffer(BUFF_SIZE, SAMPLES_ONCE, 2);
+            buffer = new CircularBuffer(BUFF_SIZE, SAMPLES_ONCE, 2, 2);
+            equalizerResult = new CircularBuffer(SAMPLES_ONCE * 4, SAMPLES_ONCE, 2, 1);
+
+            equalizerThread = new Thread(this::equalizerWork);
+            equalizerThread.start();
 
         } catch (IOException | UnsupportedAudioFileException | LineUnavailableException e) {
             System.out.println(e.getMessage());
@@ -91,8 +100,10 @@ public class AudioPlayer {
                     return;
                 }
 
-                if (putSuccess)
+                if (putSuccess) {
                     readStatus = ais.read(readBytes, 0, SAMPLES_ONCE * 4);
+                    sample = makeSamplesFromBytes(readBytes);
+                }
 
                 if (readStatus == -1) {
                     endWork();
@@ -100,20 +111,18 @@ public class AudioPlayer {
                     break;
                 }
 
-                sample = makeSamplesFromBytes(readBytes);
-
                 inputSignal.put(sample);
                 if (inputSignal.isEvaluated())
                     inputSignal.setEvaluated(false);
 
-                buffer.put(sample);
+                putSuccess = buffer.put(sample);
 
-                if (buffer.pull(sample)) {
+                if (equalizerResult.pull(sample)) {
 
-                    if (enableEqualizer)
-                        sample = equalizer.evaluate(sample);
-                    else
-                        equalizer.evaluate(sample);
+//                    if (enableEqualizer)
+//                        sample = equalizer.evaluate(sample);
+//                    else
+//                        equalizer.evaluate(sample);
 
                     if (enableChorus)
                         sample = chorus.evaluate(sample);
@@ -178,6 +187,21 @@ public class AudioPlayer {
         }
     }
 
+    private void equalizerWork() {
+        short[] samples = new short[SAMPLES_ONCE * 2];
+
+        while (true) {
+            if (ended) return;
+
+            if (buffer.pull(samples)) {
+                if (enableEqualizer)
+                    equalizerResult.put(equalizer.evaluate(samples));
+                else
+                    equalizerResult.put(samples);
+            }
+        }
+    }
+
     public void chartWork(XYChart.Data<Number, Number>[] iData1,
                           XYChart.Data<Number, Number>[] iData2,
                           XYChart.Data<Number, Number>[] oData1,
@@ -185,19 +209,21 @@ public class AudioPlayer {
         try {
             while (true) {
 
-                if (!inputSignal.isEvaluated()) {
-                    inputSignal.evaluate();
-                    chart(iData1, iData2, inputSignal);
-                    inputSignal.setEvaluated(true);
+                if (enableGraphics) {
+                    if (!inputSignal.isEvaluated()) {
+                        inputSignal.evaluate();
+                        chart(iData1, iData2, inputSignal);
+                        inputSignal.setEvaluated(true);
+                    }
+
+                    if (!outputSignal.isEvaluated()) {
+                        outputSignal.evaluate();
+                        chart(oData1, oData2, outputSignal);
+                        outputSignal.setEvaluated(true);
+                    }
                 }
 
-                if (!outputSignal.isEvaluated()) {
-                    outputSignal.evaluate();
-                    chart(oData1, oData2, outputSignal);
-                    outputSignal.setEvaluated(true);
-                }
-
-                Thread.sleep(50);
+                Thread.sleep(100);
                 if (ended) return;
             }
         } catch (InterruptedException e) {
@@ -267,5 +293,9 @@ public class AudioPlayer {
 
     public void setEnableClipping(boolean enableClipping) {
         this.enableClipping = enableClipping;
+    }
+
+    public void setEnableGraphics(boolean enableGraphics) {
+        this.enableGraphics = enableGraphics;
     }
 }

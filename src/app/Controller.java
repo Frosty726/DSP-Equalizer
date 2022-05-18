@@ -45,6 +45,7 @@ public class Controller {
     @FXML private CheckBox equalizerEnable;
     @FXML private CheckBox chorusEnable;
     @FXML private CheckBox clippingEnable;
+    @FXML private CheckBox graphicsEnable;
 
     @FXML private Label musicTitle;
 
@@ -123,6 +124,19 @@ public class Controller {
     @FXML
     public void checkBoxClipping(ActionEvent e) {
         aPlayer.setEnableClipping(clippingEnable.isSelected());
+    }
+
+    @FXML
+    public void checkBoxGraphics(ActionEvent e) {
+        aPlayer.setEnableGraphics(graphicsEnable.isSelected());
+        if (!graphicsEnable.isSelected()) {
+            for (int i = 0; i < iData1.length; i++) {
+                iData1[i].setYValue(0);
+                iData2[i].setYValue(0);
+                oData1[i].setYValue(0);
+                oData2[i].setYValue(0);
+            }
+        }
     }
 
     @FXML
@@ -237,5 +251,6 @@ public class Controller {
         equalizerEnable.setSelected(true);
         chorusEnable.setSelected(false);
         clippingEnable.setSelected(false);
+        graphicsEnable.setSelected(false);
     }
 }

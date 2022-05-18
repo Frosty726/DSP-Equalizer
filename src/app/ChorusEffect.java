@@ -10,6 +10,8 @@ public class ChorusEffect implements Evaluatable {
     private int             delay[];
     private double   currentValue[];
     private final double     step[] = {0.1, 0.3, 0.5};
+    private final int   baseDelay[] = {670, 920, 710};
+    private final int  delayRange[] = {440, 510, 340};
 
 
     public ChorusEffect(int smplOnce) {
@@ -24,7 +26,9 @@ public class ChorusEffect implements Evaluatable {
         short[] result = new short[smplOnce * 2];
         for (int i = 0; i < step.length; i++) {
             currentValue[i] += step[i];
-            delay[i] = (int)(Math.sin(currentValue[i]) * 440) + 800;
+            if (currentValue[i] > Math.PI)
+                currentValue[i] -= Math.PI;
+            delay[i] = (int)(Math.sin(currentValue[i]) * delayRange[i]) + baseDelay[i];
         }
 
         buffer.putQueue(samples);

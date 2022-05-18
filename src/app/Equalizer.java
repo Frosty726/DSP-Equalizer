@@ -11,7 +11,7 @@ public class Equalizer implements Evaluatable, SampleQueue {
     }
 
     private static final int NUM_OF_FILTERS = 8;
-    private static final int THREAD_FILTERS = 1; // Number of filters in one thread
+    private static final int THREAD_FILTERS = 2; // Number of filters in one thread
 
     private int          smplOnce;
     private BandFilter[]  filters;

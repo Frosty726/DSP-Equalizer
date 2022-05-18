@@ -4,9 +4,9 @@ import java.lang.Math;
 
 public class FFT {
 
-    private static int BUFF_SIZE;
     private static final double twoPi = Math.PI * 2;
 
+    private static int  BUFF_SIZE;
     private CircularBuffer buffer;
     private double[]       result;
 

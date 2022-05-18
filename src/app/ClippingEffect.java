@@ -1,6 +1,6 @@
 package app;
 
-public class ClippingEffect implements Evaluatable {
+public class ClippingEffect implements Processable {
 
     private short upperBound;
     private short lowerBound;
@@ -11,7 +11,7 @@ public class ClippingEffect implements Evaluatable {
     }
 
     @Override
-    public short[] evaluate(short[] samples) {
+    public short[] process(short[] samples) {
 
         short[] result = new short[samples.length];
 

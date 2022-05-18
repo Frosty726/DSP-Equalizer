@@ -1,6 +1,6 @@
 package app;
 
-public class Filter implements Evaluatable {
+public class Filter implements Processable {
 
     private int      order;
     private double[] coefs;
@@ -17,12 +17,12 @@ public class Filter implements Evaluatable {
     }
 
     @Override
-    public short[] evaluate(short[] samples) {
+    public short[] process(short[] samples) {
         buffer.putQueue(samples);
-        return process();
+        return filtering();
     }
 
-    private short[] process() {
+    private short[] filtering() {
         double[] mult = new double[2 * smplOnce]; // 2 channels
 
         for (int i = 0; i < mult.length; i++) {

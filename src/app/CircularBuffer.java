@@ -7,6 +7,7 @@ public class CircularBuffer {
     private short[] buffer;
     private int head;
     private int tail;
+    private int range;
 
     private boolean isOccupied = false;
     private int      numThreadsWaiting;
@@ -14,10 +15,11 @@ public class CircularBuffer {
 
     public CircularBuffer(int size, int smplOnce, int numChannels) {
         samplesOnce = smplOnce * numChannels;
-        BUFF_SIZE = size * numChannels;
+        BUFF_SIZE   = size * numChannels;
         buffer = new short[BUFF_SIZE];
-        head = 0;
-        tail = 0;
+        head   = 0;
+        tail   = 0;
+        range  = 0;
 
         numThreadsWaiting = 0;
         maxThreadsWaiting = 0;
@@ -40,7 +42,7 @@ public class CircularBuffer {
             waitingRoom(false);
             return false;
         }
-        if (head - tail >= BUFF_SIZE - 2 * samplesOnce) {
+        if (range >= BUFF_SIZE - samplesOnce) {
             waitingRoom(false);
             return false;
         }
@@ -48,6 +50,7 @@ public class CircularBuffer {
         System.arraycopy(source, 0, buffer, head, samplesOnce);
         head = (head + samplesOnce) % BUFF_SIZE;
 
+        range += samplesOnce;
         waitingRoom(false);
 
         return true;
@@ -65,7 +68,7 @@ public class CircularBuffer {
             return false;
         }
 
-        if (head - tail == 0) {
+        if (range <= 0) {
             waitingRoom(false);
             return false;
         }
@@ -73,6 +76,7 @@ public class CircularBuffer {
         System.arraycopy(buffer, tail, target, 0, samplesOnce);
         tail = (tail + samplesOnce) % BUFF_SIZE;
 
+        range -= samplesOnce;
         waitingRoom(false);
 
         return true;

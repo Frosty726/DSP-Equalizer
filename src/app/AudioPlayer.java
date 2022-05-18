@@ -27,7 +27,7 @@ public class AudioPlayer {
 
     /** Size of circular buffer **/
     private static final int SAMPLES_ONCE = 16384;
-    private static final int    BUFF_SIZE = SAMPLES_ONCE * 8;
+    private static final int    BUFF_SIZE = SAMPLES_ONCE * 4;
     private CircularBuffer buffer;
     private CircularBuffer equalizerResult;
 
@@ -35,9 +35,9 @@ public class AudioPlayer {
     private FFT  inputSignal;
     private FFT outputSignal;
 
-    private Evaluatable equalizer;
-    private Evaluatable    chorus;
-    private Evaluatable  clipping;
+    private Processable equalizer;
+    private Processable chorus;
+    private Processable clipping;
 
     private boolean enableEqualizer = true;
     private boolean enableChorus    = false;
@@ -125,12 +125,12 @@ public class AudioPlayer {
 //                        equalizer.evaluate(sample);
 
                     if (enableChorus)
-                        sample = chorus.evaluate(sample);
+                        sample = chorus.process(sample);
                     else
-                        chorus.evaluate(sample);
+                        chorus.process(sample);
 
                     if (enableClipping)
-                        sample = clipping.evaluate(sample);
+                        sample = clipping.process(sample);
 
 
                     outputSignal.put(sample);
@@ -195,7 +195,7 @@ public class AudioPlayer {
 
             if (buffer.pull(samples)) {
                 if (enableEqualizer)
-                    equalizerResult.put(equalizer.evaluate(samples));
+                    equalizerResult.put(equalizer.process(samples));
                 else
                     equalizerResult.put(samples);
             }

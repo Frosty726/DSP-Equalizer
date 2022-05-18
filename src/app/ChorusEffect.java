@@ -2,7 +2,7 @@ package app;
 
 
 
-public class ChorusEffect implements Evaluatable {
+public class ChorusEffect implements Processable {
 
     private int          smplOnce;
     private CircularBuffer buffer;
@@ -22,7 +22,7 @@ public class ChorusEffect implements Evaluatable {
     }
 
     @Override
-    public short[] evaluate(short[] samples) {
+    public short[] process(short[] samples) {
         short[] result = new short[smplOnce * 2];
         for (int i = 0; i < step.length; i++) {
             currentValue[i] += step[i];

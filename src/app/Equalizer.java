@@ -2,7 +2,7 @@ package app;
 
 import app.coefs.Coefs;
 
-public class Equalizer implements Evaluatable, SampleQueue {
+public class Equalizer implements Processable, SampleQueue {
 
     /** Enum for threads handling **/
     private enum THREAD {
@@ -82,7 +82,7 @@ public class Equalizer implements Evaluatable, SampleQueue {
     }
 
     @Override
-    public short[] evaluate(short[] sample) {
+    public short[] process(short[] sample) {
 
         buffer.putQueue(sample);
         report(THREAD.EQUALIZER);

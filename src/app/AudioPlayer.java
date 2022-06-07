@@ -88,8 +88,6 @@ public class AudioPlayer {
             boolean putSuccess = true;
             int     readStatus = 0;
 
-            short[] readSamples;
-
             while (true) {
                 if (paused) pause();
                 if (ended) {

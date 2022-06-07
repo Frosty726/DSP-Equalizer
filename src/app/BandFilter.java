@@ -2,13 +2,13 @@ package app;
 
 public class BandFilter {
 
-    private SampleQueue handler;
+    private ISampleQueue handler;
 
     private int      order;
     private double[] coefs;
     private int   smplOnce;
 
-    public BandFilter(SampleQueue handler, int order, double[] coefs, int smplOnce) {
+    public BandFilter(ISampleQueue handler, int order, double[] coefs, int smplOnce) {
         this.handler = handler;
         this.smplOnce = smplOnce;
         this.order = order;

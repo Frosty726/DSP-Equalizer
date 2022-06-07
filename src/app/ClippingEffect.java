@@ -38,7 +38,7 @@ public class ClippingEffect implements Processable {
     }
 
     public void setBound(short bound) {
-        this.lowerBound = (short)-Math.abs(bound);
-        this.upperBound = (short) Math.abs(bound);
+        setLowerBound(bound);
+        setUpperBound(bound);
     }
 }

@@ -1,5 +1,5 @@
 package app;
 
-public interface SampleQueue {
+public interface ISampleQueue {
     short getSample(int index);
 }

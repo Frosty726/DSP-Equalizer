@@ -2,7 +2,7 @@ package app;
 
 import app.coefs.Coefs;
 
-public class Equalizer implements Processable, SampleQueue {
+public class Equalizer implements Processable, ISampleQueue {
 
     /** Enum for threads handling **/
     private enum THREAD {

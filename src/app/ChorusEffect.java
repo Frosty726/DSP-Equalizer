@@ -1,7 +1,6 @@
 package app;
 
 
-
 public class ChorusEffect implements Processable {
 
     private int          smplOnce;
